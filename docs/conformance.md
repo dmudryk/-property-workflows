@@ -42,12 +42,12 @@
 | AC-TASK-08 | сторінка запуску показує статус кожної з 5 задач | — | — | відкладено (чекає реалізації) |
 | AC-TASK-09 | список запусків менеджера показує прогрес «2 of 5 done» | — | — | відкладено (чекає реалізації) |
 | AC-TASK-06 | менеджер бачить лише свої запуски й запуски, де він виконавець | — | — | відкладено (чекає реалізації) |
-| AC-RUN-01 | запуск шаблону створює один запуск «in progress» з усіма 5 задачами «to do» | — | — | відкладено (чекає реалізації) |
-| AC-RUN-02 | зміна шаблону після запуску не змінює задачі й назви в запуску | — | — | відкладено (чекає реалізації) |
-| AC-RUN-03 | порожня назва чи назва з пробілів — запуску немає, «Enter a case name» | — | — | відкладено (чекає реалізації) |
-| AC-RUN-07 | назва з 101 символу — запуску немає, «Case name must be at most 100 characters» | — | — | відкладено (чекає реалізації) |
-| AC-RUN-05 | адміністратор запускає шаблон і стає менеджером запуску | — | — | відкладено (чекає реалізації) |
-| AC-RUN-06 | менеджер запускає шаблон і стає менеджером запуску | — | — | відкладено (чекає реалізації) |
-| AC-RUN-04 | дві задачі призначено менеджеру B, решта три — менеджеру A | — | — | відкладено (чекає реалізації) |
-| AC-RUN-08 | менеджер без призначень — виконавець усіх 5 задач | — | — | відкладено (чекає реалізації) |
-| AC-RUN-09 | адміністратор без призначень — виконавець усіх 5 задач | — | — | відкладено (чекає реалізації) |
+| AC-RUN-01 | запуск шаблону створює один запуск «in progress» з усіма 5 задачами «to do» | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
+| AC-RUN-02 | зміна шаблону після запуску не змінює задачі й назви в запуску | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
+| AC-RUN-03 | порожня назва чи назва з пробілів — запуску немає, «Enter a case name» | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
+| AC-RUN-07 | назва з 101 символу — запуску немає, «Case name must be at most 100 characters» | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
+| AC-RUN-05 | адміністратор запускає шаблон і стає менеджером запуску | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
+| AC-RUN-06 | менеджер запускає шаблон і стає менеджером запуску | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
+| AC-RUN-04 | дві задачі призначено менеджеру B, решта три — менеджеру A | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
+| AC-RUN-08 | менеджер без призначень — виконавець усіх 5 задач | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
+| AC-RUN-09 | адміністратор без призначень — виконавець усіх 5 задач | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |

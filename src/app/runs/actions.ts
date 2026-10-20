@@ -1,0 +1,46 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { MSG_EMPTY_CASE_NAME, validateCaseName } from "@/lib/runs/rules";
+import { requireActor } from "./actor";
+
+// Запуск шаблону для випадку (AC-RUN-01…09). Правила — src/lib/runs/rules.ts; запис — одна функція Postgres
+// public.launch_run (design.md, D5), тож запуск і всі його задачі створюються в одній транзакції.
+export async function launchRun(formData: FormData) {
+  const { supabase, actor } = await requireActor();
+  const templateId = String(formData.get("template_id") ?? "");
+  const caseName = String(formData.get("case_name") ?? "");
+  const back = (error: string) =>
+    redirect(`/runs/new?template=${encodeURIComponent(templateId)}&error=${error}`);
+
+  if (!actor) back("forbidden");
+  if (!templateId) redirect("/runs/new");
+
+  const name = validateCaseName(caseName);
+  if (!name.ok) back(name.error === MSG_EMPTY_CASE_NAME ? "empty" : "too_long");
+
+  // Поля assignee:<id задачі шаблону>; порожнє значення — менеджер запуску (AC-RUN-08, AC-RUN-09).
+  const assignments: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    if (key.startsWith("assignee:") && typeof value === "string" && value) {
+      assignments[key.slice("assignee:".length)] = value;
+    }
+  }
+
+  const { data: runId, error } = await supabase.rpc("launch_run", {
+    p_template_id: templateId,
+    p_case_name: caseName,
+    p_assignments: assignments,
+  });
+
+  if (error || !runId) {
+    const message = error?.message ?? "";
+    if (message.includes("EMPTY_CASE_NAME")) back("empty");
+    if (message.includes("CASE_NAME_TOO_LONG")) back("too_long");
+    back("failed");
+  }
+
+  revalidatePath("/runs");
+  redirect(`/runs/${runId}`);
+}

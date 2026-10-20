@@ -1,15 +1,15 @@
 ## 1. Запуск шаблону для випадку (PR «Реалізація» `task/launch-run`)
 
-- [ ] 1.1 Міграція `…_runs_launch.sql`: ролі `manager`/`admin` (D1); `templates`, `template_sections`,
+- [x] 1.1 Міграція `…_runs_launch.sql`: ролі `manager`/`admin` (D1); `templates`, `template_sections`,
       `template_tasks`, `runs`, `run_tasks` з RLS, `revoke` + явними `grant`, політиками `select`/`insert`; хелпери
       `private.can_see_run`, `private.is_staff`, `private.staff`; функції `public.launch_run`, `public.list_staff`;
       демо-шаблони «Tenant move-in» і «Repair» (D2, D5, D7)
-- [ ] 1.2 `supabase/demo-users.json`: `admin@`, `manager.a@`, `manager.b@`, `manager.c@example.test` (D1);
+- [x] 1.2 `supabase/demo-users.json`: `admin@`, `manager.a@`, `manager.b@`, `manager.c@example.test` (D1);
       `src/lib/supabase/database.types.ts` — нові таблиці й функції
-- [ ] 1.3 `src/lib/runs/rules.ts`: `validateCaseName`, `planRun`; тести `src/lib/runs/launch.test.ts` (D3, D4)
-- [ ] 1.4 Сторінки `/runs` (список, поки без прогресу), `/runs/new` (форма запуску), `/runs/[id]` (задачі й виконавці);
+- [x] 1.3 `src/lib/runs/rules.ts`: `validateCaseName`, `planRun`; тести `src/lib/runs/launch.test.ts` (D3, D4)
+- [x] 1.4 Сторінки `/runs` (список, поки без прогресу), `/runs/new` (форма запуску), `/runs/[id]` (задачі й виконавці);
       server action `launchRun`; `/` → `/runs` (D8)
-- [ ] 1.5 Рядки `docs/conformance.md` для AC-RUN-01…09 — «реалізовано»
+- [x] 1.5 Рядки `docs/conformance.md` для AC-RUN-01…09 — «реалізовано»
 
 Done when: AC-RUN-01, AC-RUN-02, AC-RUN-03, AC-RUN-04, AC-RUN-05, AC-RUN-06, AC-RUN-07, AC-RUN-08, AC-RUN-09
 
