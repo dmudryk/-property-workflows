@@ -5,13 +5,18 @@
     "role": "admin"
   },
   {
-    "email": "member1@example.test",
-    "full_name": "Андрій Демо-Перший",
-    "role": "member"
+    "email": "manager.a@example.test",
+    "full_name": "Менеджер A (демо)",
+    "role": "manager"
   },
   {
-    "email": "member2@example.test",
-    "full_name": "Марія Демо-Друга",
-    "role": "member"
+    "email": "manager.b@example.test",
+    "full_name": "Менеджер B (демо)",
+    "role": "manager"
+  },
+  {
+    "email": "manager.c@example.test",
+    "full_name": "Менеджер C (демо)",
+    "role": "manager"
   }
 ]
