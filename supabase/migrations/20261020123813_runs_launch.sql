@@ -96,9 +96,9 @@ alter table public.runs enable row level security;
 alter table public.run_tasks enable row level security;
 
 revoke all on table public.runs, public.run_tasks from anon, authenticated;
--- Читання — під політиками нижче; вставка — лише через public.launch_run (і її політики).
--- update/delete для authenticated тут не видаємо: зміну статусу задачі додає наступна міграція (задача 2).
-grant select, insert on table public.runs, public.run_tasks to authenticated;
+-- Лише читання — під політиками нижче. insert/update/delete для authenticated не видаємо: запис — лише через
+-- функції private (security definer) з явними перевірками (docs/decisions/0001-writes-via-private-functions.md).
+grant select on table public.runs, public.run_tasks to authenticated;
 grant select, insert, update, delete on table public.runs, public.run_tasks to service_role;
 
 -- ── Хелпери (security definer, лише private) ──
@@ -164,49 +164,29 @@ create policy runs_select_visible on public.runs
   for select to authenticated
   using ((select private.can_see_run(id)));
 
-create policy runs_insert_own on public.runs
-  for insert to authenticated
-  with check (
-    manager_id = (select auth.uid())
-    and status = 'in_progress'
-    and (select private.current_app_role()) in ('manager', 'admin')
-  );
-
 create policy run_tasks_select_visible on public.run_tasks
   for select to authenticated
   using ((select private.can_see_run(run_id)));
 
--- Задачі — лише в запуск, де поточний користувач менеджер запуску; виконавець — менеджер чи адміністратор (AC-RUN-04).
-create policy run_tasks_insert_by_run_manager on public.run_tasks
-  for insert to authenticated
-  with check (
-    status = 'to_do'
-    and done_at is null
-    and done_by is null
-    and (select private.is_staff(assignee_id))
-    and exists (
-      select 1 from public.runs as r
-      where r.id = run_id and r.manager_id = (select auth.uid())
-    )
-  );
-
--- ── D5. Запуск шаблону — одна транзакція ──
--- p_assignments: {"<id задачі шаблону>": "<id виконавця>", …}; задачі без призначення — менеджеру запуску
--- (AC-RUN-04, AC-RUN-08, AC-RUN-09). id запуску генеруємо заздалегідь: без returning і без select щойно вставленого рядка.
-create or replace function public.launch_run(
+-- ── D5 + ADR 0001. Запуск шаблону — одна транзакція, лише через цю функцію ──
+-- security definer: RLS тут не діє, тому всі перевірки — явні. p_assignments: {"<id задачі шаблону>": "<id виконавця>"};
+-- задачі без призначення — менеджеру запуску (AC-RUN-04, AC-RUN-08, AC-RUN-09); виконавець — лише manager чи admin.
+create or replace function private.launch_run(
   p_template_id uuid,
   p_case_name text,
-  p_assignments jsonb default '{}'::jsonb
+  p_assignments jsonb
 )
 returns uuid
 language plpgsql
-security invoker
+volatile
+security definer
 set search_path = ''
 as $$
 declare
   v_run_id uuid := gen_random_uuid();
   v_uid uuid := (select auth.uid());
   v_template_name text;
+  v_assignments jsonb := coalesce(p_assignments, '{}'::jsonb);
 begin
   if v_uid is null or (select private.current_app_role()) not in ('manager', 'admin') then
     raise exception 'NOT_ALLOWED' using errcode = '42501';
@@ -218,9 +198,24 @@ begin
     raise exception 'CASE_NAME_TOO_LONG' using errcode = '22023';
   end if;
 
+  if jsonb_typeof(v_assignments) <> 'object' then
+    raise exception 'INVALID_ASSIGNMENTS' using errcode = '22023';
+  end if;
+
   select t.name into v_template_name from public.templates as t where t.id = p_template_id;
   if v_template_name is null then
     raise exception 'TEMPLATE_NOT_FOUND' using errcode = 'P0002';
+  end if;
+
+  -- Кожен призначений виконавець задачі цього шаблону — менеджер чи адміністратор (AC-RUN-04).
+  if exists (
+    select 1
+    from public.template_tasks as tt
+    where tt.template_id = p_template_id
+      and nullif(v_assignments ->> tt.id::text, '') is not null
+      and not private.is_staff(nullif(v_assignments ->> tt.id::text, '')::uuid)
+  ) then
+    raise exception 'INVALID_ASSIGNEE' using errcode = '22023';
   end if;
 
   insert into public.runs (id, template_id, template_name, case_name, status, manager_id)
@@ -233,7 +228,7 @@ begin
     tt.name,
     tt.required,
     s.position * 1000 + tt.position,
-    coalesce(nullif(coalesce(p_assignments, '{}'::jsonb) ->> tt.id::text, '')::uuid, v_uid),
+    coalesce(nullif(v_assignments ->> tt.id::text, '')::uuid, v_uid),
     'to_do'
   from public.template_tasks as tt
   join public.template_sections as s on s.id = tt.section_id
@@ -241,6 +236,24 @@ begin
 
   return v_run_id;
 end;
+$$;
+
+revoke execute on function private.launch_run(uuid, text, jsonb) from public, anon;
+grant execute on function private.launch_run(uuid, text, jsonb) to authenticated;
+
+-- Обгортка для Data API (схема private не відкрита).
+create or replace function public.launch_run(
+  p_template_id uuid,
+  p_case_name text,
+  p_assignments jsonb default '{}'::jsonb
+)
+returns uuid
+language sql
+volatile
+security invoker
+set search_path = ''
+as $$
+  select private.launch_run(p_template_id, p_case_name, p_assignments);
 $$;
 
 revoke execute on function public.launch_run(uuid, text, jsonb) from public, anon;
