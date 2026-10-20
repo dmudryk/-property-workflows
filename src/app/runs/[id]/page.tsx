@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { progressLabel, runStatusLabel, taskStatusLabel } from "@/lib/runs/rules";
+import { markDone } from "../actions";
 import { requireActor, staffLabel } from "../actor";
+import { RUN_ERRORS } from "../messages";
 
-const STATUS_LABEL: Record<string, string> = { in_progress: "in progress", completed: "completed" };
-const TASK_STATUS_LABEL: Record<string, string> = { to_do: "to do", done: "done" };
-
-// Сторінка запуску: задачі за секціями з виконавцем і статусом. Запуск, якого користувач не бачить (RLS), — 404.
-export default async function RunPage({ params }: PageProps<"/runs/[id]">) {
+// Сторінка запуску: прогрес «N of M done» (AC-TASK-05), задачі за секціями з виконавцем і статусом (AC-TASK-08),
+// «Mark as done» на кожній задачі «to do» (AC-TASK-01, AC-TASK-02, AC-TASK-07); відмова — AC-TASK-03.
+// Запуск, якого користувач не бачить (RLS, AC-TASK-06), — 404.
+export default async function RunPage({ params, searchParams }: PageProps<"/runs/[id]">) {
   const { id } = await params;
+  const { error } = await searchParams;
+  const message = typeof error === "string" ? RUN_ERRORS[error] : undefined;
   const { supabase } = await requireActor();
 
   const { data: run } = await supabase
@@ -42,21 +46,48 @@ export default async function RunPage({ params }: PageProps<"/runs/[id]">) {
         </Link>
         <h1 className="text-2xl font-semibold">{run.case_name}</h1>
         <p className="text-sm text-zinc-500">
-          {run.template_name} · <span data-testid="run-status">{STATUS_LABEL[run.status] ?? run.status}</span> · run
-          manager: <span data-testid="run-manager">{staffLabel(people.get(run.manager_id))}</span>
+          {run.template_name} · <span data-testid="run-status">{runStatusLabel(run.status)}</span> · run manager:{" "}
+          <span data-testid="run-manager">{staffLabel(people.get(run.manager_id))}</span>
+        </p>
+        <p data-testid="run-progress" className="text-lg font-medium">
+          {progressLabel(tasks ?? [])}
         </p>
       </div>
+
+      {message ? (
+        <p role="alert" className="rounded border border-red-300 px-4 py-2 text-sm text-red-600">
+          {message}
+        </p>
+      ) : null}
 
       {sections.map((section) => (
         <section key={section.name} className="flex flex-col gap-2">
           <h2 className="text-sm font-medium text-zinc-500">{section.name}</h2>
           <ul className="flex flex-col divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
             {section.tasks.map((task) => (
-              <li key={task.id} data-testid="run-task" className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+              <li
+                key={task.id}
+                data-testid="run-task"
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+              >
                 <span>{task.name}</span>
                 <span className="text-sm text-zinc-500">{staffLabel(people.get(task.assignee_id))}</span>
-                <span data-testid="task-status" className="text-sm">
-                  {TASK_STATUS_LABEL[task.status] ?? task.status}
+                <span className="flex items-center gap-3">
+                  <span data-testid="task-status" className="text-sm">
+                    {taskStatusLabel(task.status)}
+                  </span>
+                  {task.status === "to_do" ? (
+                    <form action={markDone}>
+                      <input type="hidden" name="run_id" value={run.id} />
+                      <input type="hidden" name="task_id" value={task.id} />
+                      <button
+                        type="submit"
+                        className="rounded border border-zinc-300 px-3 py-1 text-sm dark:border-zinc-700"
+                      >
+                        Mark as done
+                      </button>
+                    </form>
+                  ) : null}
                 </span>
               </li>
             ))}

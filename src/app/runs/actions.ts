@@ -44,3 +44,20 @@ export async function launchRun(formData: FormData) {
   revalidatePath("/runs");
   redirect(`/runs/${runId}`);
 }
+
+// Позначка задачі виконаною (AC-TASK-01…04, AC-TASK-07). Права перевіряє база (RLS + public.mark_task_done);
+// відмова — повідомлення AC-TASK-03 на сторінці запуску.
+export async function markDone(formData: FormData) {
+  const { supabase, actor } = await requireActor();
+  const runId = String(formData.get("run_id") ?? "");
+  const taskId = String(formData.get("task_id") ?? "");
+  if (!runId || !taskId) redirect("/runs");
+
+  const { error } = actor
+    ? await supabase.rpc("mark_task_done", { p_task_id: taskId })
+    : { error: { message: "NOT_ALLOWED" } };
+
+  revalidatePath("/runs");
+  revalidatePath(`/runs/${runId}`);
+  redirect(error ? `/runs/${runId}?error=not_allowed` : `/runs/${runId}`);
+}
