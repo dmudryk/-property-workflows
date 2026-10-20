@@ -74,3 +74,65 @@ export function planRun(
     },
   };
 }
+
+// ── Задача 2: позначка «done», завершення запуску, прогрес і видимість (openspec/specs/run-tasks) ──
+
+export const MSG_NOT_ALLOWED_TO_MARK =
+  "Only the task's assignee, the run manager, or an administrator can mark a task as done";
+
+export type TaskStatus = "to_do" | "done";
+export type RunStatus = "in_progress" | "completed";
+
+export type RunTask = { id: string; assigneeId: string; required: boolean; status: TaskStatus };
+export type Run = { id: string; managerId: string; status: RunStatus; tasks: RunTask[] };
+
+// AC-TASK-01, AC-TASK-02, AC-TASK-03, AC-TASK-07: виконавець задачі, менеджер її запуску або адміністратор.
+export function canMarkDone(actor: Actor, run: Pick<Run, "managerId">, task: Pick<RunTask, "assigneeId">): boolean {
+  return actor.role === "admin" || run.managerId === actor.id || task.assigneeId === actor.id;
+}
+
+// AC-TASK-04: запуск «completed», коли всі обов'язкові задачі «done»; необов'язкові статусу не змінюють.
+export function runStatus(tasks: readonly Pick<RunTask, "required" | "status">[]): RunStatus {
+  return tasks.every((t) => !t.required || t.status === "done") ? "completed" : "in_progress";
+}
+
+export type MarkResult = { ok: true; run: Run } | { ok: false; error: string; run: Run };
+
+// Позначка задачі виконаною. Повторна позначка вже «done» задачі нічого не змінює (припущення PM).
+export function markTaskDone(actor: Actor, run: Run, taskId: string): MarkResult {
+  const task = run.tasks.find((t) => t.id === taskId);
+  if (!task || !canMarkDone(actor, run, task)) {
+    return { ok: false, error: MSG_NOT_ALLOWED_TO_MARK, run };
+  }
+  if (task.status === "done") return { ok: true, run };
+  const tasks = run.tasks.map((t) => (t.id === taskId ? { ...t, status: "done" as const } : t));
+  return { ok: true, run: { ...run, tasks, status: runStatus(tasks) } };
+}
+
+// AC-TASK-08: статус задачі на сторінці запуску — «done» або «to do» (терміни глосарію PM).
+export function taskStatusLabel(status: string): string {
+  return status === "done" ? "done" : "to do";
+}
+
+// Статус запуску на сторінках — «in progress» або «completed» (глосарій PM).
+export function runStatusLabel(status: string): string {
+  return status === "completed" ? "completed" : "in progress";
+}
+
+// AC-TASK-05, AC-TASK-09: «N of M done», N — задачі «done», M — усі задачі запуску (обов'язкові й ні).
+export function progressLabel(tasks: readonly { status: string }[]): string {
+  const done = tasks.filter((t) => t.status === "done").length;
+  return `${done} of ${tasks.length} done`;
+}
+
+// AC-TASK-06: адміністратор бачить усі запуски; менеджер — ті, де він менеджер запуску або виконавець хоча б однієї
+// задачі. Ту саму умову в базі перевіряє private.can_see_run (RLS).
+export function canSeeRun(actor: Actor, run: Pick<Run, "managerId" | "tasks">): boolean {
+  return (
+    actor.role === "admin" || run.managerId === actor.id || run.tasks.some((t) => t.assigneeId === actor.id)
+  );
+}
+
+export function visibleRuns<T extends Pick<Run, "managerId" | "tasks">>(actor: Actor, runs: readonly T[]): T[] {
+  return runs.filter((run) => canSeeRun(actor, run));
+}

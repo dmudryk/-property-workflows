@@ -33,15 +33,15 @@
 
 | AC | Що перевіряє | Код | Тест | Статус |
 |---|---|---|---|---|
-| AC-TASK-01 | виконавець позначає свою задачу виконаною — статус «done» | — | — | відкладено (чекає реалізації) |
-| AC-TASK-02 | менеджер запуску позначає чужу задачу свого запуску — статус «done» | — | — | відкладено (чекає реалізації) |
-| AC-TASK-07 | адміністратор позначає задачу чужого запуску — статус «done» | — | — | відкладено (чекає реалізації) |
-| AC-TASK-03 | сторонній менеджер не може позначити задачу: лишається «to do» і повідомлення | — | — | відкладено (чекає реалізації) |
-| AC-TASK-04 | остання обов'язкова задача «done» переводить запуск у «completed» | — | — | відкладено (чекає реалізації) |
-| AC-TASK-05 | сторінка запуску показує прогрес «2 of 5 done» | — | — | відкладено (чекає реалізації) |
-| AC-TASK-08 | сторінка запуску показує статус кожної з 5 задач | — | — | відкладено (чекає реалізації) |
-| AC-TASK-09 | список запусків менеджера показує прогрес «2 of 5 done» | — | — | відкладено (чекає реалізації) |
-| AC-TASK-06 | менеджер бачить лише свої запуски й запуски, де він виконавець | — | — | відкладено (чекає реалізації) |
+| AC-TASK-01 | виконавець позначає свою задачу виконаною — статус «done» | `src/lib/runs/rules.ts` (markTaskDone), `supabase/migrations/20261020124103_runs_complete_tasks.sql` (mark_task_done) | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-02 | менеджер запуску позначає чужу задачу свого запуску — статус «done» | `src/lib/runs/rules.ts` (markTaskDone), `supabase/migrations/20261020124103_runs_complete_tasks.sql` (mark_task_done) | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-07 | адміністратор позначає задачу чужого запуску — статус «done» | `src/lib/runs/rules.ts` (markTaskDone), `supabase/migrations/20261020124103_runs_complete_tasks.sql` (mark_task_done) | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-03 | сторонній менеджер не може позначити задачу: лишається «to do» і повідомлення | `src/lib/runs/rules.ts` (markTaskDone), `supabase/migrations/20261020124103_runs_complete_tasks.sql` (mark_task_done) | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-04 | остання обов'язкова задача «done» переводить запуск у «completed» | `src/lib/runs/rules.ts` (markTaskDone), `supabase/migrations/20261020124103_runs_complete_tasks.sql` (mark_task_done) | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-05 | сторінка запуску показує прогрес «2 of 5 done» | `src/lib/runs/rules.ts` (progressLabel), `src/app/runs/[id]/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-08 | сторінка запуску показує статус кожної з 5 задач | `src/lib/runs/rules.ts` (taskStatusLabel), `src/app/runs/[id]/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-09 | список запусків менеджера показує прогрес «2 of 5 done» | `src/lib/runs/rules.ts` (progressLabel), `src/app/runs/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-06 | менеджер бачить лише свої запуски й запуски, де він виконавець | `src/lib/runs/rules.ts` (visibleRuns), `supabase/migrations/20261020123813_runs_launch.sql` (can_see_run) | `src/lib/runs/tasks.test.ts` | реалізовано |
 | AC-RUN-01 | запуск шаблону створює один запуск «in progress» з усіма 5 задачами «to do» | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
 | AC-RUN-02 | зміна шаблону після запуску не змінює задачі й назви в запуску | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
 | AC-RUN-03 | порожня назва чи назва з пробілів — запуску немає, «Enter a case name» | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |

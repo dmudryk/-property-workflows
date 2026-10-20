@@ -44,3 +44,24 @@ export async function launchRun(formData: FormData) {
   revalidatePath("/runs");
   redirect(`/runs/${runId}`);
 }
+
+// Позначка задачі виконаною (AC-TASK-01…04, AC-TASK-07). Права перевіряє база (private.mark_task_done, ADR 0001);
+// відмова в правах (42501 / NOT_ALLOWED) — повідомлення AC-TASK-03, інші збої — окреме повідомлення.
+export async function markDone(formData: FormData) {
+  const { supabase, actor } = await requireActor();
+  const runId = String(formData.get("run_id") ?? "");
+  const taskId = String(formData.get("task_id") ?? "");
+  if (!runId || !taskId) redirect("/runs");
+
+  let code: "not_allowed" | "failed" | null = actor ? null : "not_allowed";
+  if (actor) {
+    const { error } = await supabase.rpc("mark_task_done", { p_task_id: taskId });
+    if (error) {
+      code = error.code === "42501" || error.message.includes("NOT_ALLOWED") ? "not_allowed" : "failed";
+    }
+  }
+
+  revalidatePath("/runs");
+  revalidatePath(`/runs/${runId}`);
+  redirect(code ? `/runs/${runId}?error=${code}` : `/runs/${runId}`);
+}

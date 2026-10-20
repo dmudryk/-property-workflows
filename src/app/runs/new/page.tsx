@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { launchRun } from "../actions";
 import { requireActor, staffLabel } from "../actor";
-import { LAUNCH_ERRORS } from "../messages";
+import { LAUNCH_ERRORS, messageFor } from "../messages";
 
 // Запуск шаблону для випадку (AC-RUN-01…09): шаблон → назва випадку → виконавці задач (за замовчуванням — менеджер
 // запуску, тобто «me»).
@@ -9,7 +9,7 @@ export default async function NewRunPage({ searchParams }: PageProps<"/runs/new"
   const { supabase, actor } = await requireActor();
   const { template, error } = await searchParams;
   const templateId = typeof template === "string" ? template : "";
-  const message = typeof error === "string" ? LAUNCH_ERRORS[error] : undefined;
+  const message = messageFor(LAUNCH_ERRORS, error);
 
   const { data: templates } = await supabase.from("templates").select("id, name").order("name");
 

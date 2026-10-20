@@ -1,15 +1,14 @@
 import Link from "next/link";
+import { progressLabel, runStatusLabel } from "@/lib/runs/rules";
 import { requireActor } from "./actor";
 
-const STATUS_LABEL: Record<string, string> = { in_progress: "in progress", completed: "completed" };
-
-// Список запусків. Які запуски видно — вирішує RLS (private.can_see_run): адміністратор — усі; менеджер — ті, де він
-// менеджер запуску або виконавець хоча б однієї задачі (design.md, D7).
+// Список запусків із прогресом «N of M done» (AC-TASK-09). Які запуски видно — вирішує RLS (private.can_see_run):
+// адміністратор — усі; менеджер — ті, де він менеджер запуску або виконавець хоча б однієї задачі (AC-TASK-06).
 export default async function RunsPage() {
   const { supabase } = await requireActor();
   const { data: runs } = await supabase
     .from("runs")
-    .select("id, case_name, template_name, status, created_at")
+    .select("id, case_name, template_name, status, created_at, run_tasks(status)")
     .order("created_at", { ascending: false });
 
   return (
@@ -28,7 +27,10 @@ export default async function RunsPage() {
                 <span className="font-medium">{run.case_name}</span>
                 <span className="text-sm text-zinc-500">{run.template_name}</span>
                 <span data-testid="run-status" className="text-sm">
-                  {STATUS_LABEL[run.status] ?? run.status}
+                  {runStatusLabel(run.status)}
+                </span>
+                <span data-testid="run-progress" className="text-sm font-medium">
+                  {progressLabel(run.run_tasks ?? [])}
                 </span>
               </Link>
             </li>
