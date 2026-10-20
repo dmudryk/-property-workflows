@@ -11,87 +11,84 @@
 Docker не потрібен: локально — лише npm run dev проти вашої бази; міграції на одноразовій базі перевіряє CI (db-check).
 -->
 
-Моє репо: <!-- https://github.com/<dev>/<team-slug> --> · Прод-URL: <!-- https://<slug>.vercel.app -->
-Репо вимог PM: <!-- https://github.com/<pm>/<team-slug>-spec --> · Організація Supabase: <!-- назва -->
+Моє репо: https://github.com/dmudryk/-property-workflows · Прод-URL: https://property-workflows-bravo16.vercel.app
+Репо вимог PM: https://github.com/solomchaak/property-workflows-spec · Організація Supabase: `property-workflows` (Free)
 
 ## 1. Інструменти й репо
 
-- [ ] Node 24 (`node -v`), Git, GitHub CLI (`gh auth status`); OpenSpec CLI глобально тієї ж версії, що в `package.json`:
-      `npm i -g @fission-ai/openspec@1.14.1` → `openspec --version` = `1.14.1`
-- [ ] Репо створено з шаблону (**Use this template → Create a new repository**): власник — ваш особистий акаунт, назва —
-      `<team-slug>`, **Public** (ruleset на GitHub Free діє лише в публічних репо; PM у нотатці-порівнянні посилається на
-      рядки вашого коду) — <!-- посилання -->
-- [ ] `git clone https://github.com/<dev>/<team-slug>.git` → `npm ci` → `cp .env.example .env.local`
-      (у PowerShell: `Copy-Item .env.example .env.local`)
-- [ ] CodeRabbit (GitHub App) встановлено на це репо (github.com/apps/coderabbitai → Configure → Only select repositories) — <!-- знімок -->
+- [x] Node 24 (`node -v` → v24.14.1), Git, GitHub CLI (`gh` 2.95.0, `gh auth status` — увійдено); OpenSpec CLI глобально
+      тієї ж версії, що в `package.json`: `npm i -g @fission-ai/openspec@1.14.1` → `openspec --version` = `1.14.1`
+- [x] Репо створено з шаблону (**Use this template → Create a new repository**): власник — особистий акаунт `dmudryk`,
+      **Public**, шаблон — `koldovsky/2026-quitcode-06-project-template` — https://github.com/dmudryk/-property-workflows
+      (назва з дефісом на початку: `-property-workflows`)
+- [x] `git clone` → `npm ci` → `.env.local` з `.env.example` (`Copy-Item .env.example .env.local`)
+- [x] CodeRabbit (GitHub App) встановлено на це репо — рев'ю в PR: https://github.com/dmudryk/-property-workflows/pull/2
 - [ ] (Якщо PM надіслав список справжніх назв клієнта особистим повідомленням) — локальний `product/denylist.local.txt`
-      (у `.gitignore`; `npm run spec:check` читає його й значень не друкує)
+      — PM списку не надсилав
 
 ## 2. Supabase: власна база
 
-- [ ] Організацію й проєкт створено у вашому акаунті (один із двох безкоштовних проєктів; регіон — найближчий) — <!-- регіон -->
-- [ ] Authentication: «Allow new users to sign up» **вимкнено**, «Confirm email» **вимкнено**
-      (точні назви й місце перемикачів перевірте в інтерфейсі) — <!-- знімки docs/img/auth-signups.png, docs/img/auth-email.png -->
-- [ ] (Після розділу 4, коли є прод-URL) Authentication → URL Configuration: Site URL = прод-URL Vercel; Redirect URLs
-      `http://localhost:3000/**`, `https://*-<slug>.vercel.app/**` — <!-- знімок -->
-- [ ] `.env.local`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`
-      (Project Settings → API Keys; точну назву розділу перевірте в інтерфейсі) і `DEMO_USER_PASSWORD` (≥ 8 символів).
-      Значення не комітимо й не вставляємо в чат — <!-- лише назви -->
+- [x] Організацію `property-workflows` і проєкт `property-workflows` створено у власному акаунті (Free)
+- [x] Authentication → Sign In / Providers: «Allow new users to sign up» **вимкнено**, «Confirm email» **вимкнено** —
+      перевірено через `GET /auth/v1/settings` (2026-10-20): `disable_signup: true`, `mailer_autoconfirm: true`
+- [x] Authentication → URL Configuration: Site URL = `https://property-workflows-bravo16.vercel.app`; Redirect URLs
+      `http://localhost:3000/**`, `https://property-workflows-*-bravo16.vercel.app/**`
+- [x] `.env.local`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`,
+      `DEMO_USER_PASSWORD` — задані лише локально (файл у `.gitignore`); значень тут немає
 
 ## 3. GitHub: environment `production` і секрети
 
-- [ ] Settings → Environments → `production` (якщо перший прогін CI вже створив його автоматично — відкрийте наявний;
-      `Production`, яке створює Vercel для своїх деплоїв, — те саме середовище: регістр у назвах GitHub не розрізняє):
-      **Deployment branches** = Selected branches → `main` — <!-- знімок -->
-- [ ] Секрет environment `SUPABASE_DB_URL` = рядок **Session pooler** (порт **5432**, не 6543) з Supabase → **Connect**;
-      пароль у рядку percent-encoded — <!-- лише назва секрету -->
-- [ ] Запасний шлях (лише якщо `--db-url` не працює): секрети environment `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`,
-      `SUPABASE_PROJECT_ID` (README, «Міграції в прод: запасний шлях») — <!-- не потрібно / назви -->
-- [ ] (Необов'язково) секрет репо `SPEC_DENYLIST` — ті самі справжні назви через кому, для CI
+- [x] Settings → Environments → `production`: **Deployment branches** = Selected branches → `main`
+      (`GET /repos/dmudryk/-property-workflows/environments/production/deployment-branch-policies` → `main`)
+- [x] Секрет environment `SUPABASE_DB_URL` — рядок **Session pooler** (порт 5432) з Supabase → Connect; секретів
+      репозиторію немає
+- [x] Запасний шлях — не потрібно (`--db-url` працює)
+- [ ] (Необов'язково) секрет репо `SPEC_DENYLIST` — не задано (PM списку не надсилав)
 
 ## 4. Vercel
 
-- [ ] Add New → Project → імпорт вашого репо, Node 24.x — <!-- прод-URL -->
-- [ ] Змінні Production і Preview — лише `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`;
-      `SUPABASE_SECRET_KEY` — **ніколи** — <!-- знімок (лише назви) -->
-- [ ] Settings → Deployment Protection → **Require Log In** вимкнено → Save (інакше PM і викладач не відкриють ваші preview;
-      точну назву перемикача перевірте в інтерфейсі) — <!-- знімок -->
-- [ ] Після змінних — редеплой; прод-URL відкривається — <!-- посилання -->
+- [x] Add New → Project → імпорт `dmudryk/-property-workflows` — https://property-workflows-bravo16.vercel.app
+- [x] Змінні Production і Preview — лише `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`;
+      `SUPABASE_SECRET_KEY` у Vercel немає; Marketplace-інтеграцію Supabase прибрано (Integrations → порожньо)
+- [x] Settings → Deployment Protection → **Require Log In** вимкнено: прод-URL без входу у Vercel відкриває `/login`
+      застосунку (HTTP 307 → `/login`, 200)
+- [x] Прод-деплой з `main` пройшов — https://property-workflows-bravo16.vercel.app
 
 ## 5. База й перший зелений CI
 
-- [ ] Actions → CI → **Run workflow** (гілка `main`, `include_seed` ✓) → job `db-deploy` застосував першу міграцію й сид — <!-- посилання на run -->
-- [ ] `npm run users:demo` (синтетичні користувачі з `supabase/demo-users.json`) → `npm run dev` → `http://localhost:3000` →
-      вхід як `admin@example.test` працює локально й на прод-URL
-- [ ] CI на `main` зелений: `spec`, `app`, `conformance`, `db-check`, `db-deploy` — <!-- посилання на run -->
+- [x] Actions → CI → **Run workflow** (гілка `main`, `include_seed` ✓) → `db-deploy` застосував першу міграцію й сид —
+      https://github.com/dmudryk/-property-workflows/actions/runs/39425600941
+      («Applying migration 20261012000000_profiles_and_roles.sql… Seeding data from supabase/seed.sql…»)
+- [ ] `npm run users:demo` → вхід як `admin@example.test` локально й на прод-URL — після міграції ролей задачі 1
+      (`manager`/`admin`, PR «Реалізація» задачі 1)
+- [x] CI на `main` зелений: `spec`, `app`, `conformance`, `db-check`, `db-deploy` —
+      https://github.com/dmudryk/-property-workflows/actions/runs/39425600941
 
 ## 6. Ruleset `solo-main` (лише після зеленого CI на `main`)
 
-- [ ] Settings → Rules → Rulesets → **New ruleset → Import a ruleset** → `solo-main.json` з курсового репо
-      (`materials/rulesets/solo-main.json`) або вручну: target — гілка за замовчуванням (`main`); Restrict deletions;
-      Block force pushes; Require a pull request — **0 approvals** (колег у вашому репо немає); Require status checks
-      (джерело GitHub Actions, без «up to date»): `spec`, `app`, `conformance`, `db-check`; Allowed merge methods —
-      **Squash** і **Merge**; Bypass list — **порожній** (навіть для власника); Enforcement — Active
-      (точні назви полів перевірте в інтерфейсі) — <!-- знімок docs/img/ruleset.png -->
+- [x] Ruleset `solo-main` імпортовано з `materials/rulesets/solo-main.json` курсового репо (`gh api … /rulesets`):
+      гілка за замовчуванням; deletion, non_fast_forward; pull request — 0 approvals, Squash і Merge; обов'язкові
+      `spec`, `app`, `conformance`, `db-check`; bypass — порожній; enforcement — active
 
 ## 7. Перший PR (перевірка ruleset-у)
 
-- [ ] `git switch -c setup/bootstrap` → цей файл із доказами розділів 1–6 → push → `gh pr create --web` (тип «Реалізація»)
-      → окремим коментарем `@coderabbitai review` — <!-- посилання на PR (наступним PR) -->
-- [ ] Поки перевірки не зелені, кнопка merge заблокована; push у `main` напряму відхиляється — <!-- знімок -->
-- [ ] Vercel створив preview для PR — <!-- посилання на preview (наступним PR) -->
-- [ ] **Squash and merge** → прод-деплой Vercel пройшов — <!-- посилання -->
-- [ ] (З першою задачею, що має міграцію) `db-check` зелений, після merge `db-deploy` застосував її у вашу базу — <!-- посилання на run -->
+- [x] Перший PR — «Оновлення вимог» https://github.com/dmudryk/-property-workflows/pull/1 (CI зелений,
+      `@coderabbitai review`); цей файл — PR `setup/bootstrap`
+- [x] Поки перевірки не зелені, merge заблоковано ruleset-ом `solo-main` (обов'язкові `spec`, `app`, `conformance`,
+      `db-check`); у `main` — лише PR
+- [x] Vercel створює preview для PR — https://property-workflows-git-spec-add-ws6-runs-bravo16.vercel.app (PR #2)
+- [x] **Squash and merge** → прод-деплой Vercel пройшов — https://github.com/dmudryk/-property-workflows/pull/2
+- [ ] (З першою задачею, що має міграцію) `db-check` зелений, після merge `db-deploy` застосував її у вашу базу —
+      PR задачі 1
 
 ## 8. Вимоги PM і специфікація
 
-- [ ] Адресу репо вимог PM узято з чату команди; на зустрічі команди (дні 0–2, до кінця 15.10, організує PM; якщо
-      команда не зібралася — діра в чат команди до обіду 16.10) — перший раунд питань до брифу
-- [ ] PM написав у чаті команди «вимоги оновлено» (у курсі перші вимоги — до кінця 16.10) → у Claude Code чи Cursor
-      `/requirements-sync <pm>/<team-slug>-spec` → PR «Оновлення вимог» злито; шапка `docs/conformance.md` показує
-      адресу, джерело (issues чи docs) і дату знімка — <!-- посилання на PR -->
-- [ ] Читання вимог: скіл `spec-clarify` → питання — issues «Питання до вимог» у репо PM через вебформу → журнал
-      `docs/spec-reading.md` — <!-- посилання на issues -->
-- [ ] Переклад у специфікацію (гілка `spec/add-<зріз>`): `/opsx:propose add-<зріз>` → `npx openspec validate add-<зріз> --strict`
-      → скіл `spec-review` → `npx openspec archive add-<зріз> -y` → `/conformance` → PR «Специфікація» злито;
-      `npm run ac:coverage` без «вимогу PM ще не перекладено» — <!-- посилання на PR -->
+- [x] Адресу репо вимог PM узято з чату команди — https://github.com/solomchaak/property-workflows-spec
+- [x] `/requirements-sync https://github.com/solomchaak/property-workflows-spec` → PR «Оновлення вимог» злито; шапка
+      `docs/conformance.md` — `Вимоги: … · джерело: issues · знімок 2026-10-20` —
+      https://github.com/dmudryk/-property-workflows/pull/1
+- [x] Читання вимог: скіл `spec-clarify` → питання через вебформу — solomchaak/property-workflows-spec#16, #17, #18 →
+      журнал `docs/spec-reading.md`
+- [x] Переклад у специфікацію: `add-ws6-runs` → `validate --strict` → `spec-review` → archive → `/conformance` → PR
+      «Специфікація» злито; `npm run ac:coverage` без «вимогу PM ще не перекладено» —
+      https://github.com/dmudryk/-property-workflows/pull/2
