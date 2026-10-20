@@ -1,18 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { progressLabel, runStatusLabel, taskStatusLabel } from "@/lib/runs/rules";
+import { canMarkDone, progressLabel, runStatusLabel, taskStatusLabel } from "@/lib/runs/rules";
 import { markDone } from "../actions";
 import { requireActor, staffLabel } from "../actor";
-import { RUN_ERRORS } from "../messages";
+import { RUN_ERRORS, messageFor } from "../messages";
 
 // Сторінка запуску: прогрес «N of M done» (AC-TASK-05), задачі за секціями з виконавцем і статусом (AC-TASK-08),
-// «Mark as done» на кожній задачі «to do» (AC-TASK-01, AC-TASK-02, AC-TASK-07); відмова — AC-TASK-03.
+// «Mark as done» на задачі «to do» лише тому, хто може її позначити (AC-TASK-01, AC-TASK-02, AC-TASK-07);
+// права перевіряє й база, відмова — повідомлення AC-TASK-03.
 // Запуск, якого користувач не бачить (RLS, AC-TASK-06), — 404.
 export default async function RunPage({ params, searchParams }: PageProps<"/runs/[id]">) {
   const { id } = await params;
   const { error } = await searchParams;
-  const message = typeof error === "string" ? RUN_ERRORS[error] : undefined;
-  const { supabase } = await requireActor();
+  const message = messageFor(RUN_ERRORS, error);
+  const { supabase, actor } = await requireActor();
 
   const { data: run } = await supabase
     .from("runs")
@@ -76,7 +77,9 @@ export default async function RunPage({ params, searchParams }: PageProps<"/runs
                   <span data-testid="task-status" className="text-sm">
                     {taskStatusLabel(task.status)}
                   </span>
-                  {task.status === "to_do" ? (
+                  {task.status === "to_do" &&
+                  actor &&
+                  canMarkDone(actor, { managerId: run.manager_id }, { assigneeId: task.assignee_id }) ? (
                     <form action={markDone}>
                       <input type="hidden" name="run_id" value={run.id} />
                       <input type="hidden" name="task_id" value={task.id} />

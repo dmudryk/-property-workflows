@@ -5,13 +5,18 @@
 
 -- ── Завершення запуску (AC-TASK-04): completed, коли не лишилось обов'язкових задач to_do ──
 -- Необов'язкові задачі статусу запуску не змінюють. Тригерна функція — лише для тригера, викликати її не можна.
+-- Гонка двох одночасних позначок (рев'ю CodeRabbit): спершу блокуємо рядок запуску окремим оператором — у READ
+-- COMMITTED наступний оператор plpgsql бере свіжий знімок і бачить задачу, закомічену паралельною транзакцією.
 create or replace function private.refresh_run_status()
 returns trigger
 language plpgsql
+volatile
 security definer
 set search_path = ''
 as $$
 begin
+  perform 1 from public.runs where id = new.run_id for update;
+
   update public.runs as r
   set status = case
     when exists (

@@ -22,7 +22,7 @@ Done when: AC-RUN-01, AC-RUN-02, AC-RUN-03, AC-RUN-04, AC-RUN-05, AC-RUN-06, AC-
       `src/lib/runs/tasks.test.ts` (D3, D6, D7)
 - [x] 2.3 `/runs/[id]`: прогрес «N of M done», статус кожної задачі, кнопка «Mark as done», повідомлення відмови;
       `/runs`: прогрес у кожному рядку; server action `markDone` (D7, D8)
-- [x] 2.4 Рядки `docs/conformance.md` для AC-TASK-01…09 — «реалізовано»; запис екрана з прод-URL в описі PR;
+- [ ] 2.4 Рядки `docs/conformance.md` для AC-TASK-01…09 — «реалізовано»; запис екрана з прод-URL в описі PR;
       archive `impl-ws6-runs`
 
 Done when: AC-TASK-01, AC-TASK-02, AC-TASK-03, AC-TASK-04, AC-TASK-05, AC-TASK-06, AC-TASK-07, AC-TASK-08, AC-TASK-09

@@ -8,7 +8,13 @@ export const LAUNCH_ERRORS: Record<string, string> = {
   failed: "The run could not be created. Try again.",
 };
 
-// Відмова в позначці задачі — дослівно AC-TASK-03.
+// Відмова в позначці задачі — дослівно AC-TASK-03; інші збої — окреме повідомлення.
 export const RUN_ERRORS: Record<string, string> = {
   not_allowed: MSG_NOT_ALLOWED_TO_MARK,
+  failed: "The task could not be marked as done. Try again.",
 };
+
+// Лише власні ключі словника: ?error=__proto__ чи toString не повертає успадкованих значень.
+export function messageFor(dictionary: Record<string, string>, code: unknown): string | undefined {
+  return typeof code === "string" && Object.hasOwn(dictionary, code) ? dictionary[code] : undefined;
+}
