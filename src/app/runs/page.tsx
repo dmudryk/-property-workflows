@@ -1,15 +1,16 @@
 import Link from "next/link";
-import { progressLabel, runStatusLabel } from "@/lib/runs/rules";
+import { newestFirst, progressLabel, runStatusLabel } from "@/lib/runs/rules";
 import { requireActor } from "./actor";
 
-// Список запусків із прогресом «N of M done» (AC-TASK-09). Які запуски видно — вирішує RLS (private.can_see_run):
-// адміністратор — усі; менеджер — ті, де він менеджер запуску або виконавець хоча б однієї задачі (AC-TASK-06).
+// Список запусків: у кожному рядку — випадок, шаблон, статус і прогрес «N of M done» (AC-TASK-09, AC-TASK-13,
+// AC-TASK-17), від найновішого (AC-TASK-14). Які запуски видно — вирішує RLS (private.can_see_run): адміністратор —
+// усі; менеджер — ті, де він менеджер запуску або виконавець хоча б однієї задачі (AC-TASK-06).
 export default async function RunsPage() {
   const { supabase } = await requireActor();
-  const { data: runs } = await supabase
+  const { data: rows } = await supabase
     .from("runs")
-    .select("id, case_name, template_name, status, created_at, run_tasks(status)")
-    .order("created_at", { ascending: false });
+    .select("id, case_name, template_name, status, created_at, run_tasks(status)");
+  const runs = newestFirst((rows ?? []).map((r) => ({ ...r, createdAt: r.created_at })));
 
   return (
     <main className="flex flex-col gap-4">

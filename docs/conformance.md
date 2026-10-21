@@ -42,15 +42,15 @@
 | AC-TASK-08 | сторінка запуску показує статус кожної з 5 задач | `src/lib/runs/rules.ts` (taskStatusLabel), `src/app/runs/[id]/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
 | AC-TASK-09 | список запусків менеджера показує прогрес «2 of 5 done» | `src/lib/runs/rules.ts` (progressLabel), `src/app/runs/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
 | AC-TASK-06 | менеджер бачить лише свої запуски й запуски, де він виконавець | `src/lib/runs/rules.ts` (visibleRuns), `supabase/migrations/20261020123813_runs_launch.sql` (can_see_run) | `src/lib/runs/tasks.test.ts` | реалізовано |
-| AC-TASK-16 | скасування на підтвердженні — задача «to do», запуск «in progress» | — | — | відкладено (чекає реалізації) |
-| AC-TASK-10 | чужий запуск за посиланням — «Run not found», без задач | — | — | відкладено (чекає реалізації) |
-| AC-TASK-11 | біля кожної задачі — email виконавця, без імен і ролей | — | — | відкладено (чекає реалізації) |
-| AC-TASK-12 | задачі двома групами за секціями в порядку секцій | — | — | відкладено (чекає реалізації) |
-| AC-TASK-15 | позначка «required»/«optional» біля статусу: 3 і 2 | — | — | відкладено (чекає реалізації) |
-| AC-TASK-18 | «Mark as done» лише на задачі менеджера C, не B | — | — | відкладено (чекає реалізації) |
-| AC-TASK-13 | завершений запуск у списку: «completed» і «4 of 5 done» | — | — | відкладено (чекає реалізації) |
-| AC-TASK-14 | список від найновішого; випадок і шаблон у рядку | — | — | відкладено (чекає реалізації) |
-| AC-TASK-17 | виконавець бачить у списку прогрес «2 of 5 done» | — | — | відкладено (чекає реалізації) |
+| AC-TASK-16 | скасування на підтвердженні — задача «to do», запуск «in progress» | `src/lib/runs/rules.ts` (markTaskDone, needsConfirmation), `src/app/runs/actions.ts` (markDone) | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-10 | чужий запуск за посиланням — «Run not found», без задач | `src/lib/runs/rules.ts` (MSG_RUN_NOT_FOUND), `src/app/runs/[id]/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-11 | біля кожної задачі — email виконавця, без імен і ролей | `src/lib/runs/rules.ts` (staffLabel), `src/app/runs/[id]/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-12 | задачі двома групами за секціями в порядку секцій | `src/lib/runs/rules.ts` (groupBySection), `src/app/runs/[id]/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-15 | позначка «required»/«optional» біля статусу: 3 і 2 | `src/lib/runs/rules.ts` (requiredLabel), `src/app/runs/[id]/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-18 | «Mark as done» лише на задачі менеджера C, не B | `src/lib/runs/rules.ts` (canMarkDone), `src/app/runs/[id]/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-13 | завершений запуск у списку: «completed» і «4 of 5 done» | `src/lib/runs/rules.ts` (runStatusLabel, progressLabel), `src/app/runs/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-14 | список від найновішого; випадок і шаблон у рядку | `src/lib/runs/rules.ts` (newestFirst), `src/app/runs/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
+| AC-TASK-17 | виконавець бачить у списку прогрес «2 of 5 done» | `src/lib/runs/rules.ts` (progressLabel), `src/app/runs/page.tsx` | `src/lib/runs/tasks.test.ts` | реалізовано |
 | AC-RUN-01 | запуск шаблону створює один запуск «in progress» з усіма 5 задачами «to do» | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
 | AC-RUN-02 | зміна шаблону після запуску не змінює задачі й назви в запуску | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
 | AC-RUN-03 | порожня назва чи назва з пробілів — запуску немає, «Enter a case name» | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
@@ -60,6 +60,6 @@
 | AC-RUN-04 | дві задачі призначено менеджеру B, решта три — менеджеру A | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
 | AC-RUN-08 | менеджер без призначень — виконавець усіх 5 задач | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
 | AC-RUN-09 | адміністратор без призначень — виконавець усіх 5 задач | `src/lib/runs/rules.ts` (planRun), `supabase/migrations/20261020123813_runs_launch.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
-| AC-RUN-11 | пробіл перед назвою зі 100 символів — запуск, назва без пробілу | — | — | відкладено (чекає реалізації) |
-| AC-RUN-10 | вибір виконавця — лише email, без імен і ролей | — | — | відкладено (чекає реалізації) |
-| AC-RUN-12 | зміна секцій шаблону не змінює секції запуску | — | — | відкладено (чекає реалізації) |
+| AC-RUN-11 | пробіл перед назвою зі 100 символів — запуск, назва без пробілу | `src/lib/runs/rules.ts` (validateCaseName), `supabase/migrations/20261021071209_runs_clarifications.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
+| AC-RUN-10 | вибір виконавця — лише email, без імен і ролей | `src/lib/runs/rules.ts` (staffLabel), `src/app/runs/new/page.tsx`, `supabase/migrations/20261021071209_runs_clarifications.sql` (list_staff) | `src/lib/runs/launch.test.ts` | реалізовано |
+| AC-RUN-12 | зміна секцій шаблону не змінює секції запуску | `src/lib/runs/rules.ts` (groupBySection), `supabase/migrations/20261021071209_runs_clarifications.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |

@@ -11,13 +11,31 @@ export const MSG_CASE_NAME_TOO_LONG = "Case name must be at most 100 characters"
 
 export type CaseNameResult = { ok: true; value: string } | { ok: false; error: string };
 
-// AC-RUN-03, AC-RUN-07. Довжину рахуємо в символах Unicode за введеним текстом (design.md, D4);
-// зберігаємо назву без пробілів по краях.
+// AC-RUN-03, AC-RUN-07, AC-RUN-11. Пробіли на початку й у кінці обрізаються до перевірки й збереження (припущення
+// PM від 2026-10-20); довжину рахуємо в символах Unicode.
 export function validateCaseName(raw: string): CaseNameResult {
   const trimmed = raw.trim();
   if (trimmed.length === 0) return { ok: false, error: MSG_EMPTY_CASE_NAME };
-  if (Array.from(raw).length > CASE_NAME_MAX) return { ok: false, error: MSG_CASE_NAME_TOO_LONG };
+  if (Array.from(trimmed).length > CASE_NAME_MAX) return { ok: false, error: MSG_CASE_NAME_TOO_LONG };
   return { ok: true, value: trimmed };
+}
+
+// AC-RUN-10, AC-TASK-11: про співробітника показуємо лише email — без імені й ролі.
+export function staffLabel(member: { email: string | null } | undefined): string {
+  return member?.email ?? "—";
+}
+
+// AC-RUN-12, AC-TASK-12: задачі групами за секціями, у порядку позиції (знімок секцій на момент запуску).
+export function groupBySection<T extends { sectionName: string; position: number }>(
+  tasks: readonly T[],
+): { name: string; tasks: T[] }[] {
+  const groups: { name: string; tasks: T[] }[] = [];
+  for (const task of tasks.toSorted((a, b) => a.position - b.position)) {
+    const last = groups.at(-1);
+    if (last && last.name === task.sectionName) last.tasks.push(task);
+    else groups.push({ name: task.sectionName, tasks: [task] });
+  }
+  return groups;
 }
 
 export type TemplateTask = {
@@ -96,17 +114,49 @@ export function runStatus(tasks: readonly Pick<RunTask, "required" | "status">[]
   return tasks.every((t) => !t.required || t.status === "done") ? "completed" : "in_progress";
 }
 
-export type MarkResult = { ok: true; run: Run } | { ok: false; error: string; run: Run };
+export const MSG_CANNOT_UNDO = "This cannot be undone";
 
-// Позначка задачі виконаною. Повторна позначка вже «done» задачі нічого не змінює (припущення PM).
-export function markTaskDone(actor: Actor, run: Run, taskId: string): MarkResult {
+// AC-TASK-04, AC-TASK-16: остання обов'язкова задача «to do» — позначка лише після підтвердження.
+export function needsConfirmation(tasks: readonly Pick<RunTask, "id" | "required" | "status">[], taskId: string) {
+  const task = tasks.find((t) => t.id === taskId);
+  if (!task || !task.required || task.status !== "to_do") return false;
+  return tasks.every((t) => t.id === taskId || !t.required || t.status === "done");
+}
+
+export type MarkResult =
+  | { ok: true; run: Run }
+  | { ok: false; error: string; run: Run }
+  | { ok: false; confirm: true; run: Run };
+
+// Позначка задачі виконаною. Повторна позначка вже «done» задачі нічого не змінює (припущення PM). Останню обов'язкову
+// задачу позначаємо лише з confirmed: true; без підтвердження (або після скасування) нічого не змінюється.
+export function markTaskDone(
+  actor: Actor,
+  run: Run,
+  taskId: string,
+  options: { confirmed?: boolean } = {},
+): MarkResult {
   const task = run.tasks.find((t) => t.id === taskId);
   if (!task || !canMarkDone(actor, run, task)) {
     return { ok: false, error: MSG_NOT_ALLOWED_TO_MARK, run };
   }
   if (task.status === "done") return { ok: true, run };
+  if (needsConfirmation(run.tasks, taskId) && !options.confirmed) return { ok: false, confirm: true, run };
   const tasks = run.tasks.map((t) => (t.id === taskId ? { ...t, status: "done" as const } : t));
   return { ok: true, run: { ...run, tasks, status: runStatus(tasks) } };
+}
+
+// AC-TASK-15: позначка обов'язковості біля статусу задачі.
+export function requiredLabel(required: boolean): string {
+  return required ? "required" : "optional";
+}
+
+// AC-TASK-10: чужий запуск за прямим посиланням.
+export const MSG_RUN_NOT_FOUND = "Run not found";
+
+// AC-TASK-14: список запусків — від найновішого до найстаршого.
+export function newestFirst<T extends { createdAt: string }>(runs: readonly T[]): T[] {
+  return runs.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 // AC-TASK-08: статус задачі на сторінці запуску — «done» або «to do» (терміни глосарію PM).
