@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { launchRun } from "../actions";
-import { requireActor, staffLabel } from "../actor";
+import { staffLabel } from "@/lib/runs/rules";
+import { requireActor } from "../actor";
 import { LAUNCH_ERRORS, messageFor } from "../messages";
 
 // Запуск шаблону для випадку (AC-RUN-01…09): шаблон → назва випадку → виконавці задач (за замовчуванням — менеджер
@@ -88,7 +89,7 @@ export default async function NewRunPage({ searchParams }: PageProps<"/runs/new"
                   <option value="">Me (run manager)</option>
                   {others.map((member) => (
                     <option key={member.id} value={member.id}>
-                      {staffLabel(member)} ({member.role})
+                      {staffLabel(member)}
                     </option>
                   ))}
                 </select>

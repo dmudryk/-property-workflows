@@ -3,7 +3,16 @@ import {
   MSG_NOT_ALLOWED_TO_MARK,
   canSeeRun,
   markTaskDone,
+  MSG_CANNOT_UNDO,
+  MSG_RUN_NOT_FOUND,
+  canMarkDone,
+  groupBySection,
+  needsConfirmation,
+  newestFirst,
   progressLabel,
+  requiredLabel,
+  runStatusLabel,
+  staffLabel,
   taskStatusLabel,
   visibleRuns,
   type Actor,
@@ -33,7 +42,8 @@ function statusOf(run: Run, taskId: string) {
 }
 
 describe("run-tasks", () => {
-  it("AC-TASK-01: the assignee marks their task as done", () => {
+  it("AC-TASK-01: the assignee marks their task (not the last required one) as done", () => {
+    expect(needsConfirmation(runOfA().tasks, "t2")).toBe(false);
     const result = markTaskDone(managerB, runOfA(), "t2");
 
     expect(result.ok).toBe(true);
@@ -58,11 +68,12 @@ describe("run-tasks", () => {
     );
   });
 
-  it("AC-TASK-04: marking the third required task as done completes the run", () => {
+  it("AC-TASK-04: marking the third required task as done and confirming completes the run", () => {
     const run = runOfA({ t1: { status: "done" }, t2: { status: "done" } });
     expect(run.status).toBe("in_progress");
+    expect(needsConfirmation(run.tasks, "t4")).toBe(true);
 
-    const result = markTaskDone(managerA, run, "t4");
+    const result = markTaskDone(managerA, run, "t4", { confirmed: true });
 
     expect(result.ok).toBe(true);
     expect(result.run.status).toBe("completed");
@@ -118,5 +129,105 @@ describe("run-tasks", () => {
     const rows = visibleRuns(managerA, [run]).map((r) => ({ id: r.id, progress: progressLabel(r.tasks) }));
 
     expect(rows).toEqual([{ id: "run-a1", progress: "2 of 5 done" }]);
+  });
+
+  it("AC-TASK-10: manager C opening a run of A by a direct link sees Run not found and no tasks", () => {
+    const run = runOfA();
+
+    expect(canSeeRun(managerC, run)).toBe(false);
+    expect(visibleRuns(managerC, [run])).toEqual([]);
+    expect(MSG_RUN_NOT_FOUND).toBe("Run not found");
+  });
+
+  it("AC-TASK-11: manager B sees the assignee's email next to each task, no names or roles", () => {
+    const people = new Map([
+      [managerA.id, { email: "manager.a@example.test", full_name: "Менеджер A (демо)", role: "manager" }],
+      [managerB.id, { email: "manager.b@example.test", full_name: "Менеджер B (демо)", role: "manager" }],
+    ]);
+    const shown = runOfA().tasks.map((t) => staffLabel(people.get(t.assigneeId)));
+
+    expect(shown).toEqual([
+      "manager.a@example.test",
+      "manager.b@example.test",
+      "manager.a@example.test",
+      "manager.a@example.test",
+      "manager.a@example.test",
+    ]);
+    expect(shown.join(" ")).not.toMatch(/демо|manager$/);
+  });
+
+  it("AC-TASK-12: tasks are shown in two groups, Before move-in (2) then Move-in day (3)", () => {
+    const tasks = [
+      { sectionName: "Move-in day", position: 2001, name: "Hand over the keys" },
+      { sectionName: "Before move-in", position: 1001, name: "Sign the lease" },
+      { sectionName: "Move-in day", position: 2002, name: "Read the meters" },
+      { sectionName: "Before move-in", position: 1002, name: "Collect the deposit" },
+      { sectionName: "Move-in day", position: 2003, name: "Order cleaning" },
+    ];
+
+    expect(groupBySection(tasks).map((g) => [g.name, g.tasks.length])).toEqual([
+      ["Before move-in", 2],
+      ["Move-in day", 3],
+    ]);
+  });
+
+  it("AC-TASK-13: the list shows a completed run as completed with 4 of 5 done next to a run in progress", () => {
+    const completed = runOfA({
+      t1: { status: "done" },
+      t2: { status: "done" },
+      t3: { status: "done" },
+      t4: { status: "done" },
+    });
+    const rows = visibleRuns(managerA, [{ ...completed, status: "completed" as const }, runOfA()]).map((r) => [
+      runStatusLabel(r.status),
+      progressLabel(r.tasks),
+    ]);
+
+    expect(rows).toEqual([
+      ["completed", "4 of 5 done"],
+      ["in progress", "0 of 5 done"],
+    ]);
+  });
+
+  it("AC-TASK-14: the later Repair run is shown before Tenant move-in, each with case and template name", () => {
+    const rows = newestFirst([
+      { caseName: "Apartment 12", templateName: "Tenant move-in", createdAt: "2026-10-20T09:00:00Z" },
+      { caseName: "Apartment 12", templateName: "Repair", createdAt: "2026-10-20T10:00:00Z" },
+    ]).map((r) => `${r.caseName} · ${r.templateName}`);
+
+    expect(rows).toEqual(["Apartment 12 · Repair", "Apartment 12 · Tenant move-in"]);
+  });
+
+  it("AC-TASK-15: each task is marked required or optional next to its status: 3 and 2", () => {
+    const labels = runOfA().tasks.map((t) => requiredLabel(t.required));
+
+    expect(labels.filter((l) => l === "required")).toHaveLength(3);
+    expect(labels.filter((l) => l === "optional")).toHaveLength(2);
+  });
+
+  it("AC-TASK-16: cancelling at the confirmation of the last required task keeps it to do and the run in progress", () => {
+    const run = runOfA({ t1: { status: "done" }, t4: { status: "done" } });
+
+    const result = markTaskDone(managerB, run, "t2");
+
+    expect(result).toEqual({ ok: false, confirm: true, run });
+    expect(statusOf(result.run, "t2")).toBe("to_do");
+    expect(result.run.status).toBe("in_progress");
+    expect(MSG_CANNOT_UNDO).toBe("This cannot be undone");
+  });
+
+  it("AC-TASK-17: manager B, an assignee in the run of A, sees the progress 2 of 5 done in the list", () => {
+    const run = runOfA({ t1: { status: "done" }, t3: { status: "done" } });
+    const rows = visibleRuns(managerB, [run]).map((r) => ({ id: r.id, progress: progressLabel(r.tasks) }));
+
+    expect(rows).toEqual([{ id: "run-a1", progress: "2 of 5 done" }]);
+  });
+
+  it("AC-TASK-18: manager C is offered to mark their own task, not the task of manager B", () => {
+    const run = runOfA({ t3: { assigneeId: managerC.id } });
+    const offered = run.tasks.filter((t) => canMarkDone(managerC, run, t)).map((t) => t.id);
+
+    expect(offered).toEqual(["t3"]);
+    expect(canMarkDone(managerC, run, run.tasks[1])).toBe(false);
   });
 });

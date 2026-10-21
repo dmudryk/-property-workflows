@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   MSG_CASE_NAME_TOO_LONG,
   MSG_EMPTY_CASE_NAME,
+  groupBySection,
   planRun,
+  staffLabel,
   type Actor,
   type TemplateTask,
 } from "./rules";
@@ -95,6 +97,45 @@ describe("workflow-runs", () => {
     expect(result).toEqual({ ok: false, error: MSG_CASE_NAME_TOO_LONG });
     expect(MSG_CASE_NAME_TOO_LONG).toBe("Case name must be at most 100 characters");
     expect(planRun(managerA, "a".repeat(100), tenantMoveIn()).ok).toBe(true);
+  });
+
+  it("AC-RUN-10: the assignee picker shows emails of manager B and the administrator, no names or roles", () => {
+    const others = [
+      { id: "manager-b", email: "manager.b@example.test", full_name: "Менеджер B (демо)", role: "manager" },
+      { id: "admin-1", email: "admin@example.test", full_name: "Адмін (демо)", role: "admin" },
+    ];
+
+    const shown = others.map((member) => staffLabel(member));
+
+    expect(shown).toEqual(["manager.b@example.test", "admin@example.test"]);
+    expect(shown.join(" ")).not.toMatch(/демо|manager$|admin$/);
+  });
+
+  it("AC-RUN-11: a 100-character name preceded by one space creates a run without the leading space", () => {
+    const name = "b".repeat(100);
+    const result = planRun(managerA, ` ${name}`, tenantMoveIn());
+
+    expect(Array.from(` ${name}`)).toHaveLength(101);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.run.caseName).toBe(name);
+  });
+
+  it("AC-RUN-12: renaming and moving template sections after launch does not change the run's sections", () => {
+    const template = tenantMoveIn().map((t) =>
+      t.sectionName === "Before move-in" && t.id === "t3" ? { ...t, sectionName: "Move-in day" } : t,
+    );
+    const result = planRun(managerA, "Apartment 12, move-in", template);
+    if (!result.ok) throw new Error(result.error);
+
+    template[3].sectionName = "Key handover";
+    template[2].sectionName = "Before move-in";
+
+    const sections = groupBySection(result.run.tasks).map((s) => [s.name, s.tasks.length]);
+    expect(sections).toEqual([
+      ["Before move-in", 2],
+      ["Move-in day", 3],
+    ]);
   });
 
   it("AC-RUN-08: manager A without assignments is the assignee of all 5 tasks", () => {

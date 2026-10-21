@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { MSG_EMPTY_CASE_NAME, validateCaseName } from "@/lib/runs/rules";
+import { MSG_EMPTY_CASE_NAME, needsConfirmation, validateCaseName } from "@/lib/runs/rules";
 import { requireActor } from "./actor";
 
 // Запуск шаблону для випадку (AC-RUN-01…09). Правила — src/lib/runs/rules.ts; запис — одна функція Postgres
@@ -52,6 +52,13 @@ export async function markDone(formData: FormData) {
   const runId = String(formData.get("run_id") ?? "");
   const taskId = String(formData.get("task_id") ?? "");
   if (!runId || !taskId) redirect("/runs");
+
+  // AC-TASK-04, AC-TASK-16: остання обов'язкова задача — лише після підтвердження («This cannot be undone»).
+  if (actor && formData.get("confirmed") !== "1") {
+    const { data: tasks } = await supabase.from("run_tasks").select("id, required, status").eq("run_id", runId);
+    const list = (tasks ?? []).map((t) => ({ id: t.id, required: t.required, status: t.status as "to_do" | "done" }));
+    if (needsConfirmation(list, taskId)) redirect(`/runs/${runId}?confirm=${encodeURIComponent(taskId)}`);
+  }
 
   let code: "not_allowed" | "failed" | null = actor ? null : "not_allowed";
   if (actor) {

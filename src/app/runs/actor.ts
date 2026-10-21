@@ -22,10 +22,3 @@ export async function requireActor() {
 
   return { supabase, actor, email: profile?.email ?? claims.email ?? null };
 }
-
-export type StaffMember = { id: string; full_name: string | null; email: string | null; role: string };
-
-export function staffLabel(member: StaffMember | undefined, fallback = "—") {
-  if (!member) return fallback;
-  return member.full_name || member.email || fallback;
-}
